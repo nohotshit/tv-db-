@@ -31,3 +31,6 @@ logs/
 
 # ---- Local branding overrides (drop your own here without committing) ----
 frontend/assets/branding/custom-*
+
+# Local test artifacts
+backend/dbg.tmp.js
