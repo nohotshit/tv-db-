@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "Trivia questions. Data, not code - add your own freely, no redeploy of",
+    "logic needed. Each entry: q = question, a = four answers, c = index of",
+    "the correct one (0-3). The correct index never leaves the server until a",
+    "question is revealed."
+  ],
+  "questions": [
+    { "q": "Which planet has the shortest day in our solar system?", "a": ["Jupiter", "Mercury", "Earth", "Mars"], "c": 0 },
+    { "q": "Roughly what fraction of the human body is water?", "a": ["About one fifth", "About one third", "About two thirds", "Almost all of it"], "c": 2 },
+    { "q": "Sound travels fastest through which of these?", "a": ["Steel", "Air", "Water", "A vacuum"], "c": 0 },
+    { "q": "How many strings does a standard violin have?", "a": ["Four", "Five", "Six", "Seven"], "c": 0 },
+    { "q": "Which of these is a prime number?", "a": ["91", "87", "97", "99"], "c": 2 },
+    { "q": "Which unit measures electrical resistance?", "a": ["Volt", "Ohm", "Watt", "Ampere"], "c": 1 },
+    { "q": "An octave in Western music spans how many semitones?", "a": ["Seven", "Ten", "Twelve", "Fifteen"], "c": 2 },
+    { "q": "What is the largest organ of the human body?", "a": ["The liver", "The skin", "The brain", "The lungs"], "c": 1 },
+    { "q": "Which gas makes up most of Earth atmosphere?", "a": ["Oxygen", "Carbon dioxide", "Nitrogen", "Argon"], "c": 2 },
+    { "q": "How many degrees are in the interior angles of a triangle?", "a": ["90", "180", "270", "360"], "c": 1 },
+    { "q": "In computing, how many bits are in a byte?", "a": ["Four", "Eight", "Sixteen", "Thirty two"], "c": 1 },
+    { "q": "Which ocean is the deepest?", "a": ["Atlantic", "Indian", "Southern", "Pacific"], "c": 3 },
+    { "q": "What does a standard drum kit hi-hat consist of?", "a": ["One cymbal", "Two cymbals", "A drum and a cymbal", "Three cymbals"], "c": 1 },
+    { "q": "Which of these frequencies is a common tuning reference for A above middle C?", "a": ["220 Hz", "440 Hz", "660 Hz", "880 Hz"], "c": 1 },
+    { "q": "How many time zones does the world have if each is one hour wide?", "a": ["Twelve", "Eighteen", "Twenty four", "Thirty"], "c": 2 },
+    { "q": "Which colour of visible light has the longest wavelength?", "a": ["Violet", "Green", "Blue", "Red"], "c": 3 }
+  ]
+}
