@@ -20,10 +20,38 @@ let focused = null;
 
 export function setScope(el) {
   scope = el || document;
+  annotate();
   // Focus the first candidate so a freshly opened view is immediately drivable
   // from the remote without needing a click first.
   const items = candidates();
   focus(items[0] || null);
+}
+
+/**
+ * Expose every focusable control to the accessibility tree.
+ *
+ * Tiles, list rows, on-screen keys and game cells are divs carrying click
+ * handlers, because they need layout a <button> fights us on. A div with an
+ * onclick is invisible to a screen reader and unreachable by keyboard, so each
+ * one is given a button role and put in the tab order here - centrally, rather
+ * than relying on every call site to remember.
+ */
+function annotate() {
+  $$('.focusable', scope).forEach(function (el) {
+    const tag = el.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'A' || tag === 'SELECT') return;
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+
+    // A role without a name is barely better than no role at all. Derive one
+    // from the control's own primary label, falling back to its text.
+    if (!el.hasAttribute('aria-label')) {
+      const label = el.querySelector('.tile-label, .lr-title, .rps-label');
+      let name = label ? label.textContent : el.textContent;
+      name = String(name || '').replace(/\s+/g, ' ').trim();
+      if (name) el.setAttribute('aria-label', name.slice(0, 80));
+    }
+  });
 }
 
 function candidates() {
@@ -42,6 +70,11 @@ export function focus(el) {
   if (focused) {
     cls(focused, 'is-focused', true);
     scrollIntoViewIfNeeded(focused);
+    // Mirror our own focus onto the real one so assistive technology and the
+    // browser agree with what the remote is pointing at.
+    if (typeof focused.focus === 'function') {
+      try { focused.focus({ preventScroll: true }); } catch (e) { /* older CEF */ }
+    }
     emit('nav:focus', focused);
   }
 }
