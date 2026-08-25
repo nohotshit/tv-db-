@@ -1,0 +1,72 @@
+# ===========================================================================
+#  Musical Impact Smart TV - configuration notecard
+# ---------------------------------------------------------------------------
+#  Rename this to exactly:   TV Config
+#  and drop it into the TV object contents alongside the scripts.
+#
+#  The scripts read it once, copy everything into Linkset Data, and then say
+#  so in chat. AFTER THAT, DELETE THIS NOTECARD FROM THE OBJECT. It contains
+#  your shared secret, and anyone who can take a copy of the object can read
+#  a notecard inside it. The settings survive without it.
+#
+#  Lines starting with # are ignored. Format is   key = value
+# ===========================================================================
+
+# ---- Where your Render services live --------------------------------------
+# No trailing slash on backend_url. A trailing slash IS wanted on frontend_url,
+# because the HUD appends "hud.html" to it.
+backend_url  = https://smarttv-backend.onrender.com
+frontend_url = https://smarttv-frontend.onrender.com/
+
+# ---- Shared secret --------------------------------------------------------
+# Must match LSL_SHARED_SECRET in the backend environment exactly. Copy it from
+# the Render dashboard: Environment tab of the backend service. Used only for
+# the first pairing, after which the object gets its own per-device secret.
+shared_secret =
+
+# ---- Which face shows the screen ------------------------------------------
+# Face number on the prim that this script is in. Look at your prim in edit
+# mode with "Select Face" to find it. 0 is the default for a simple box.
+media_face = 0
+
+# ---- Who may control the TV -----------------------------------------------
+# owner | group | everyone | host
+permission_mode = owner
+
+# ---- Clock ----------------------------------------------------------------
+# The on screen clock handles every timezone properly. The object itself can
+# only compute the US zones and UTC, because LSL has no timezone database -
+# see clock_manager.lsl for the full explanation.
+timezone    = America/New_York
+time_format = 12
+date_format = MM/DD/YYYY
+
+# ---- Idle screen ----------------------------------------------------------
+idle_enabled = 1
+idle_timeout = 300
+
+# Texture UUID of your logo, used for the idle screen when the web interface
+# cannot be reached. Upload the logo to Second Life, then right click it in
+# your inventory and choose Copy Asset UUID.
+logo_uuid =
+
+# ---- Default destinations -------------------------------------------------
+# Both are changeable later from the on screen Settings app.
+movies_url = https://flixbaba.tv/
+home_url   = https://duckduckgo.com/
+
+# ---- Optional: restrict which domains the screen may load -----------------
+# Comma separated. Leave blank for no restriction. This is enforced by the
+# viewer itself, so it is a genuine second line of defence rather than a
+# suggestion. It only filters navigation the PAGE attempts, not urls a script
+# sets directly.
+media_whitelist =
+
+# ---- Nearby avatar detection ----------------------------------------------
+# Metres. 96 is the practical ceiling.
+detect_range = 20
+messaging    = 1
+
+# ---- Developer ------------------------------------------------------------
+# Turns on the on screen debug overlay. Off by default, as required.
+debug = 0
