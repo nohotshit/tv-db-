@@ -70,21 +70,43 @@ function verify(token) {
 /* -------------------------------------------------------------------------
    LSL request signing
    -------------------------------------------------------------------------
-   The object computes:  hex_hmac_sha256(secret, timestamp + "\n" + body)
-   and sends it in X-MI-Signature with the timestamp in X-MI-Timestamp.
+   The object sends X-MI-Timestamp and X-MI-Signature on every request. The
+   signature scheme is documented on signLsl below: it is a two-pass SHA-256
+   construction rather than HMAC, because HMAC cannot be computed in LSL.
 
-   LSL has no HMAC primitive, so the scripts derive it from llSHA256String
-   using the standard two-pass construction. That is why the message shape is
-   kept this simple: it has to be assembled with string concatenation in a
-   language with no binary types.
+   The message shape stays deliberately simple - ASCII only, string
+   concatenation, no binary - because it has to be assembled in a language
+   with no byte type.
    ------------------------------------------------------------------------- */
 
 const SIGNATURE_WINDOW_MS = 5 * 60 * 1000;
 
+/**
+ * Sign a Second Life bridge request.
+ *
+ *     inner     = sha256(secret + ":" + timestamp + ":" + body)
+ *     signature = sha256(secret + ":" + inner)
+ *
+ * WHY NOT HMAC-SHA256: because LSL cannot compute it. HMAC needs the key XORed
+ * byte-wise with the ipad/opad constants and the inner digest concatenated as
+ * raw bytes. LSL offers llSHA256String, which hashes the UTF-8 bytes of a
+ * STRING - there is no byte array type, no XOR across a string, and any digest
+ * byte above 0x7F would be re-encoded as two UTF-8 bytes and change the hash.
+ * Specifying HMAC here would be specifying something unimplementable in world.
+ *
+ * This two-pass construction is what LSL can actually produce, and it avoids
+ * the length-extension weakness a naive sha256(secret + message) would carry:
+ * the outer input is a fixed length and cannot be extended without the secret.
+ * Every hashed value is ASCII, so both sides agree byte for byte.
+ */
+function sha256(text) {
+  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
 function signLsl(timestamp, body, secret) {
-  return crypto.createHmac('sha256', secret || config.lslSecret)
-    .update(String(timestamp) + '\n' + String(body || ''))
-    .digest('hex');
+  const key = secret || config.lslSecret;
+  const inner = sha256(key + ':' + String(timestamp) + ':' + String(body || ''));
+  return sha256(key + ':' + inner);
 }
 
 /**
@@ -95,16 +117,25 @@ function verifyLsl(headers, rawBody, deviceSecret) {
   if (config.allowUnsignedLsl) return { ok: true, unsigned: true };
 
   const sig = headers['x-mi-signature'];
-  const ts = Number(headers['x-mi-timestamp']);
+  const rawTs = headers['x-mi-timestamp'];
+  const ts = Number(rawTs);
 
   if (!sig || !ts) return { ok: false, reason: 'missing-signature' };
 
+  // The wire timestamp is UNIX SECONDS, not milliseconds, because LSL integers
+  // are 32 bit: llGetUnixTime() * 1000 overflows well past the signed maximum,
+  // so an object physically cannot produce a millisecond stamp. Millisecond
+  // values are still accepted so anything else talking to this endpoint works.
+  const tsMs = ts < 1e11 ? ts * 1000 : ts;
+
   // A replay window, not a clock sync requirement. Region clocks are close
   // enough to real time for five minutes to be generous.
-  const skew = Math.abs(Date.now() - ts);
+  const skew = Math.abs(Date.now() - tsMs);
   if (skew > SIGNATURE_WINDOW_MS) return { ok: false, reason: 'stale-timestamp' };
 
-  const expected = signLsl(ts, rawBody, deviceSecret);
+  // Sign over the timestamp string exactly as it arrived: the object hashed
+  // the characters it sent, and re-serialising the number could differ.
+  const expected = signLsl(String(rawTs), rawBody, deviceSecret);
   if (!safeEqual(sig.toLowerCase(), expected)) return { ok: false, reason: 'bad-signature' };
 
   return { ok: true };
@@ -112,8 +143,9 @@ function verifyLsl(headers, rawBody, deviceSecret) {
 
 /** Sign a push we are sending TO an object, so it can verify us in return. */
 function signOutbound(body, deviceSecret) {
-  const ts = Date.now();
-  return { timestamp: ts, signature: signLsl(ts, body, deviceSecret) };
+  // Seconds, matching what the object can verify with llGetUnixTime().
+  const ts = Math.floor(Date.now() / 1000);
+  return { timestamp: ts, signature: signLsl(String(ts), body, deviceSecret) };
 }
 
 /** A fresh per-device secret, handed to the object once at pairing. */

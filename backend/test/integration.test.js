@@ -28,12 +28,29 @@ const GUEST = 'bbbbbbbb-1111-2222-3333-444444444444';
 
 let deviceSecret = process.env.LSL_SHARED_SECRET;
 
+/**
+ * The exact construction the LSL scripts compute with llSHA256String:
+ *
+ *     inner = sha256(secret + ":" + timestamp + ":" + body)
+ *     sig   = sha256(secret + ":" + inner)
+ *
+ * Written out longhand here rather than calling the server helper, so this
+ * suite fails if the protocol ever drifts to something that cannot actually be
+ * produced in world.
+ */
+function sha256(text) {
+  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function signLikeLsl(secret, ts, body) {
+  return sha256(secret + ':' + sha256(secret + ':' + ts + ':' + body));
+}
+
 /** Sign and send a request the way the LSL scripts do. */
 async function slPost(path, body, secretOverride) {
   const raw = JSON.stringify(body);
-  const ts = Date.now();
-  const sig = crypto.createHmac('sha256', secretOverride || deviceSecret)
-    .update(ts + '\n' + raw).digest('hex');
+  const ts = Math.floor(Date.now() / 1000);   // seconds, as LSL sends
+  const sig = signLikeLsl(secretOverride || deviceSecret, ts, raw);
 
   const res = await fetch(BASE + path, {
     method: 'POST',
@@ -107,8 +124,8 @@ test('a signed register call pairs the TV and returns a device secret', async fu
 
 test('a replayed old signature is rejected', async function () {
   const raw = JSON.stringify({ name: 'Stale' });
-  const ts = Date.now() - 10 * 60 * 1000;
-  const sig = crypto.createHmac('sha256', deviceSecret).update(ts + '\n' + raw).digest('hex');
+  const ts = Math.floor(Date.now() / 1000) - 600;   // ten minutes stale
+  const sig = signLikeLsl(deviceSecret, ts, raw);
   const res = await fetch(BASE + '/api/lsl/register', {
     method: 'POST',
     headers: {
