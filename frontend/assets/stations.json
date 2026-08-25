@@ -1,0 +1,15 @@
+{
+  "_comment": [
+    "Music stations for the Smart TV. This file is data - edit it freely, no",
+    "rebuild needed. Each entry needs name, url and genre.",
+    "",
+    "url must be a DIRECT stream address (Icecast/Shoutcast/HLS), the same kind",
+    "Second Life parcel audio accepts - not a web page that contains a player.",
+    "A page url will silently fail to play.",
+    "",
+    "No stations ship with the project on purpose: a stream address that has",
+    "gone stale makes the TV look broken. Add the ones you actually use, or add",
+    "them in the UI with the Add station button."
+  ],
+  "stations": []
+}

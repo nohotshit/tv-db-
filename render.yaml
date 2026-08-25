@@ -1,0 +1,107 @@
+# ---------------------------------------------------------------------------
+# Musical Impact Smart TV - Render Blueprint
+# ---------------------------------------------------------------------------
+# Deploy with: Render Dashboard -> New -> Blueprint -> select this repo.
+# Everything below is created in one shot: database, backend, frontend.
+#
+# NOTE ON PLANS
+#   free  : services sleep after ~15 min idle (cold start ~50s, WebSockets drop)
+#           and free Postgres instances expire. Fine for testing.
+#   starter: what you want for anything people actually use in-world.
+# Change `plan:` values below before your first deploy if you want paid tiers.
+# ---------------------------------------------------------------------------
+
+databases:
+  - name: smarttv-db
+    databaseName: smarttv
+    user: smarttv
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  # -------------------------------------------------------------------------
+  # Backend: REST API + WebSocket realtime + Second Life HTTP bridge
+  # -------------------------------------------------------------------------
+  - type: web
+    name: smarttv-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smarttv-db
+          property: connectionString
+      # Auto-generated once, then stored by Render. Never appears in git.
+      - key: SESSION_SECRET
+        generateValue: true
+      # Shared HMAC secret between the LSL scripts and this backend.
+      # After first deploy: copy this value from the Render dashboard into the
+      # TV's config notecard (see docs/SECOND-LIFE-INSTALL.md).
+      - key: LSL_SHARED_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          name: smarttv-frontend
+          type: web
+          property: host
+      # Extra allowed CORS origins, comma separated. Leave blank normally.
+      - key: EXTRA_CORS_ORIGINS
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+  # -------------------------------------------------------------------------
+  # Frontend: static Smart TV UI (no build step, plain ES modules)
+  # -------------------------------------------------------------------------
+  - type: web
+    name: smarttv-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: node build-config.js
+    staticPublishPath: .
+    autoDeploy: true
+    envVars:
+      # Injected into frontend/config.generated.js at build time.
+      - key: BACKEND_URL
+        fromService:
+          name: smarttv-backend
+          type: web
+          property: host
+      # Optional: override the logo without touching the repo.
+      - key: LOGO_URL
+        sync: false
+      - key: BRAND_NAME
+        sync: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      # MOAP loads this page inside the viewer's embedded browser; do not
+      # send X-Frame-Options here or the media face can end up blank.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /js/*
+        name: Cache-Control
+        value: public, max-age=300
+    routes:
+      - type: rewrite
+        source: /tv
+        destination: /index.html
+      - type: rewrite
+        source: /remote
+        destination: /hud.html

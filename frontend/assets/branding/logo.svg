@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Musical Impact">
+  <title>Musical Impact</title>
+  <defs>
+    <style>
+      .mi-white { fill: #ffffff; }
+      .mi-red   { fill: #ff2d2e; }
+      .mi-band-w{ fill: none; stroke: #ffffff; stroke-width: 40; stroke-linecap: butt; }
+      .mi-band-r{ fill: none; stroke: #ff2d2e; stroke-width: 40; stroke-linecap: butt; }
+      .mi-script{ font-family: "Brush Script MT", "Segoe Script", "Apple Chancery", cursive; font-style: italic; }
+      .mi-heavy { font-family: "Arial Black", "Helvetica Neue", Impact, sans-serif; font-weight: 900; }
+      .mi-thin  { font-family: "Consolas", "Menlo", monospace; letter-spacing: 6px; }
+    </style>
+  </defs>
+
+  <!-- red offset copy (the logo's signature double-print look) -->
+  <g transform="translate(-9,-6)">
+    <path class="mi-band-r" d="M 106 306 A 150 150 0 0 1 406 306" />
+    <rect class="mi-red" x="88"  y="286" width="84" height="150" rx="42" />
+    <rect class="mi-red" x="340" y="286" width="84" height="150" rx="42" />
+  </g>
+
+  <!-- white main mark -->
+  <path class="mi-band-w" d="M 106 306 A 150 150 0 0 1 406 306" />
+  <rect class="mi-white" x="88"  y="286" width="84" height="150" rx="42" />
+  <rect class="mi-white" x="340" y="286" width="84" height="150" rx="42" />
+
+  <!-- wordmark -->
+  <text class="mi-script mi-white" x="256" y="272" font-size="86" text-anchor="middle">Musical</text>
+  <text class="mi-heavy  mi-red"   x="256" y="338" font-size="62" text-anchor="middle">IMPACT</text>
+  <text class="mi-thin   mi-white" x="256" y="470" font-size="18" text-anchor="middle">- EST 2026 -</text>
+</svg>

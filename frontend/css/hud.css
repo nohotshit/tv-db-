@@ -1,0 +1,134 @@
+/* ==========================================================================
+   Musical Impact Smart TV - HUD remote
+   --------------------------------------------------------------------------
+   Rendered on a MOAP face of a HUD attachment. HUD faces are small and
+   portrait-ish, so this is a narrow column, not a 16:9 layout. Everything is
+   thumb-sized because the user is clicking it with a mouse over a HUD.
+   ========================================================================== */
+
+.hud-body {
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#hud {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
+  padding: 0.6rem 0.7rem 0.5rem;
+  zoom: var(--ui-scale);
+}
+
+/* ---- header ------------------------------------------------------------ */
+.hud-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.hud-logo { height: 1.9rem; width: auto; flex: 0 0 auto; }
+.hud-ident { flex: 1 1 auto; min-width: 0; }
+.hud-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-tv { font-size: 0.64rem; color: var(--text-faint); }
+
+.hud-role {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+.hud-role .badge { flex: 0 0 auto; }
+.hud-role .btn { margin-left: auto; }
+
+/* ---- blocks ------------------------------------------------------------ */
+.hud-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  padding: 0.5rem 0.55rem 0.6rem;
+  flex: 0 0 auto;
+}
+.hud-block.grow { flex: 1 1 auto; min-height: 4rem; display: flex; flex-direction: column; }
+.hud-block-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.45rem;
+}
+.hud-block-title .btn { margin-left: auto; font-size: 0.62rem; padding: 0.15rem 0.4rem; }
+
+.hud-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+.hud-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+
+.hud-apps .btn {
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.2rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+.hud-apps .btn > span {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* ---- d-pad ------------------------------------------------------------- */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+.dpad .btn { padding: 0.5rem 0; font-size: 0.8rem; }
+.dp-up    { grid-area: 1 / 2 / 2 / 3; }
+.dp-left  { grid-area: 2 / 1 / 3 / 2; }
+.dp-ok    { grid-area: 2 / 2 / 3 / 3; font-weight: 700; }
+.dp-right { grid-area: 2 / 3 / 3 / 4; }
+.dp-down  { grid-area: 3 / 2 / 4 / 3; }
+
+/* ---- favorites list ---------------------------------------------------- */
+#hud-favs {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  gap: 0.3rem;
+}
+#hud-favs .list-row { padding: 0.4rem 0.55rem; }
+#hud-favs .lr-title { font-size: 0.76rem; }
+#hud-favs .lr-sub { font-size: 0.62rem; }
+
+/* ---- footer ------------------------------------------------------------ */
+.hud-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.62rem;
+}
+
+/* Wider HUD faces (some users scale their HUD prim): use two columns. */
+@media (min-width: 620px) {
+  #hud {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: min-content;
+    align-content: start;
+  }
+  .hud-head, .hud-role, .hud-foot { grid-column: 1 / -1; }
+}

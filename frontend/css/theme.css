@@ -1,0 +1,76 @@
+/* ==========================================================================
+   Musical Impact Smart TV - design tokens
+   --------------------------------------------------------------------------
+   Black + red brand palette taken from the logo.
+   Runtime overrides come from branding.json via js/core/branding.js, which
+   rewrites these custom properties on :root. Keep every colour a token.
+   CEF note: no color-mix(), no :has(), no container queries. Older embedded
+   Chromium builds in the Second Life viewer choke on them.
+   ========================================================================== */
+
+:root {
+  /* --- brand ------------------------------------------------------------ */
+  --accent:        #ff2d2e;
+  --accent-dim:    #c31f20;
+  --accent-soft:   rgba(255, 45, 46, 0.16);
+  --accent-glow:   rgba(255, 45, 46, 0.35);
+
+  /* --- surfaces --------------------------------------------------------- */
+  --bg:            #0a0a0b;
+  --bg-elevated:   #141416;
+  --bg-tile:       #1b1b1e;
+  --bg-tile-hover: #242428;
+  --bg-scrim:      rgba(6, 6, 7, 0.86);
+
+  /* --- ink -------------------------------------------------------------- */
+  --text:          #f5f5f7;
+  --text-muted:    #8b8b93;
+  --text-faint:    #5a5a62;
+  --border:        #2a2a2f;
+  --border-strong: #3a3a42;
+
+  /* --- status ----------------------------------------------------------- */
+  --ok:      #35c76a;
+  --warn:    #f5a623;
+  --danger:  #ff2d2e;
+  --offline: #6b6b73;
+
+  /* --- geometry --------------------------------------------------------- */
+  --radius-sm: 6px;
+  --radius:    12px;
+  --radius-lg: 18px;
+  --focus-ring: 0 0 0 3px var(--accent), 0 0 22px 2px var(--accent-glow);
+
+  /* --- type ------------------------------------------------------------- */
+  --font: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Consolas, "SF Mono", Menlo, monospace;
+
+  /* --- motion ----------------------------------------------------------- */
+  --t-fast: 120ms ease-out;
+  --t:      220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* --- user-adjustable (Settings > Display) ----------------------------- */
+  --ui-scale:  1;
+  --brightness: 1;
+}
+
+/* Alternate themes selectable in Settings > Display > Theme.
+   Each only redefines tokens; no layout rules live here. */
+:root[data-theme="midnight"] {
+  --accent: #2d7dff;
+  --accent-dim: #1f57c3;
+  --accent-soft: rgba(45, 125, 255, 0.16);
+  --accent-glow: rgba(45, 125, 255, 0.35);
+}
+:root[data-theme="mono"] {
+  --accent: #f5f5f7;
+  --accent-dim: #b8b8be;
+  --accent-soft: rgba(245, 245, 247, 0.14);
+  --accent-glow: rgba(245, 245, 247, 0.28);
+}
+:root[data-theme="ember"] {
+  --accent: #ff7a18;
+  --accent-dim: #c2560c;
+  --accent-soft: rgba(255, 122, 24, 0.16);
+  --accent-glow: rgba(255, 122, 24, 0.35);
+}

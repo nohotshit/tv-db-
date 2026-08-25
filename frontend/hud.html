@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="brand">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Musical Impact Remote</title>
+<link rel="icon" href="assets/branding/favicon.svg">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/hud.css">
+<script src="config.generated.js"></script>
+</head>
+<body class="hud-body">
+
+<!--
+  The HUD screen is the only surface that knows WHO is using it.
+  The TV prim shows the same page to every avatar in range, so it cannot
+  identify a viewer. This page is loaded on a HUD attached to exactly one
+  avatar, and its URL carries that avatar's short-lived session token:
+
+      /hud.html?tv=<tvId>&u=<avatarKey>&n=<name>&t=<token>
+
+  Everything personal - favorites, per-user settings, private notes, the
+  "claim host" button - lives here rather than on the shared TV screen.
+-->
+
+<div id="hud">
+
+  <header class="hud-head">
+    <img class="hud-logo brand-logo-img" alt="">
+    <div class="hud-ident">
+      <div class="hud-name" id="hud-name">Not linked</div>
+      <div class="hud-tv mono" id="hud-tv">no TV paired</div>
+    </div>
+    <span class="dot is-connecting" id="hud-cloud-dot" title="Backend connection"></span>
+  </header>
+
+  <div class="hud-role">
+    <span class="badge" id="hud-role">Viewer</span>
+    <button class="btn btn-sm btn-ghost" id="hud-claim">Request control</button>
+  </div>
+
+  <!-- ---- transport ---- -->
+  <section class="hud-block">
+    <div class="hud-block-title">Media</div>
+    <div class="hud-grid-4">
+      <button class="btn btn-icon focusable" data-cmd="power"     title="Power">&#9211;</button>
+      <button class="btn btn-icon focusable" data-cmd="prev"      title="Previous">&#9198;</button>
+      <button class="btn btn-icon focusable btn-primary" data-cmd="playpause" title="Play / Pause">&#9199;</button>
+      <button class="btn btn-icon focusable" data-cmd="next"      title="Next">&#9197;</button>
+      <button class="btn btn-icon focusable" data-cmd="stop"      title="Stop">&#9209;</button>
+      <button class="btn btn-icon focusable" data-cmd="voldown"   title="Volume down">&#128265;</button>
+      <button class="btn btn-icon focusable" data-cmd="volup"     title="Volume up">&#128266;</button>
+      <button class="btn btn-icon focusable" data-cmd="mute"      title="Mute">&#128263;</button>
+    </div>
+    <div class="why hidden" id="hud-vol-note">
+      Volume only affects media played by the TV app itself. On external sites
+      the viewer media slider controls it.
+    </div>
+  </section>
+
+  <!-- ---- d-pad ---- -->
+  <section class="hud-block">
+    <div class="hud-block-title">Navigation</div>
+    <div class="dpad">
+      <button class="btn focusable dp-up"     data-cmd="up">&#9650;</button>
+      <button class="btn focusable dp-left"   data-cmd="left">&#9664;</button>
+      <button class="btn focusable dp-ok btn-primary" data-cmd="select">OK</button>
+      <button class="btn focusable dp-right"  data-cmd="right">&#9654;</button>
+      <button class="btn focusable dp-down"   data-cmd="down">&#9660;</button>
+    </div>
+    <div class="hud-grid-2">
+      <button class="btn btn-sm focusable" data-cmd="back">Back</button>
+      <button class="btn btn-sm focusable" data-cmd="home">Home</button>
+    </div>
+  </section>
+
+  <!-- ---- apps ---- -->
+  <section class="hud-block">
+    <div class="hud-block-title">Apps</div>
+    <div class="hud-grid-4 hud-apps">
+      <button class="btn btn-sm focusable" data-app="movies">&#127916;<span>Movies</span></button>
+      <button class="btn btn-sm focusable" data-app="youtube">&#9654;<span>YouTube</span></button>
+      <button class="btn btn-sm focusable" data-app="music">&#127925;<span>Music</span></button>
+      <button class="btn btn-sm focusable" data-app="twitch">&#128250;<span>Twitch</span></button>
+      <button class="btn btn-sm focusable" data-app="kick">&#128994;<span>Kick</span></button>
+      <button class="btn btn-sm focusable" data-app="browser">&#127760;<span>Browser</span></button>
+      <button class="btn btn-sm focusable" data-app="messages">&#128172;<span>Messages</span></button>
+      <button class="btn btn-sm focusable" data-app="games">&#127918;<span>Games</span></button>
+    </div>
+  </section>
+
+  <!-- ---- system ---- -->
+  <section class="hud-block">
+    <div class="hud-block-title">System</div>
+    <div class="hud-grid-4 hud-apps">
+      <button class="btn btn-sm focusable" data-app="settings">&#9881;<span>Settings</span></button>
+      <button class="btn btn-sm focusable" data-app="clock">&#128340;<span>Clock</span></button>
+      <button class="btn btn-sm focusable" data-cmd="resync">&#128260;<span>Sync</span></button>
+      <button class="btn btn-sm focusable" data-app="permissions">&#128274;<span>Access</span></button>
+    </div>
+  </section>
+
+  <!-- ---- personal ---- -->
+  <section class="hud-block grow">
+    <div class="hud-block-title">
+      My favorites
+      <button class="btn btn-sm btn-ghost" id="hud-fav-add">+ Add current</button>
+    </div>
+    <div class="list scroll" id="hud-favs"></div>
+  </section>
+
+  <footer class="hud-foot">
+    <span class="mono faint" id="hud-status">local mode</span>
+  </footer>
+
+</div>
+
+<div id="toasts"></div>
+<div id="modal-root"></div>
+
+<script type="module" src="js/hud.js"></script>
+</body>
+</html>

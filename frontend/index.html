@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="brand">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Musical Impact Smart TV</title>
+<link rel="icon" href="assets/branding/favicon.svg">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/components.css">
+<!-- Deployment values injected at build time on Render. Public URLs only. -->
+<script src="config.generated.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ SHELL (home + all app views) ============ -->
+  <div id="shell" class="hidden">
+
+    <header id="statusbar">
+      <img class="sb-logo brand-logo-img" alt="">
+      <span class="sb-brand" data-bind="brandName">Musical Impact</span>
+
+      <span class="sb-spacer"></span>
+
+      <span class="sb-item" id="sb-media" title="Now playing">
+        <span class="dot" id="sb-media-dot"></span>
+        <span id="sb-media-text">Nothing playing</span>
+      </span>
+
+      <span class="sb-item" id="sb-viewers" title="Connected viewers">
+        <span>&#128100;</span><span id="sb-viewers-text">0</span>
+      </span>
+
+      <span class="sb-item" id="sb-host" title="Who controls this TV">
+        <span class="badge b-host" id="sb-host-text">No host</span>
+      </span>
+
+      <span class="sb-item" id="sb-cloud" title="Backend connection">
+        <span class="dot is-connecting" id="sb-cloud-dot"></span>
+        <span id="sb-cloud-text">Connecting</span>
+      </span>
+
+      <span class="sb-item">
+        <span class="col" style="gap:0">
+          <span class="sb-clock" id="sb-clock">--:--</span>
+          <span class="sb-date" id="sb-date"></span>
+        </span>
+      </span>
+    </header>
+
+    <main id="viewport"><!-- views mount here --></main>
+  </div>
+
+  <!-- ============ BOOT ============ -->
+  <div id="boot" class="screen">
+    <img class="brand-logo brand-logo-img" alt="">
+    <div class="boot-product" data-bind="productName">SMART TV</div>
+    <div class="boot-status" id="boot-status">Initializing...</div>
+    <div class="boot-bar"><i id="boot-bar-fill"></i></div>
+  </div>
+
+  <!-- ============ IDLE ============ -->
+  <div id="idle" class="screen is-hidden">
+    <img class="brand-logo brand-logo-img" alt="">
+    <div class="idle-clock" id="idle-clock">--:--</div>
+    <div class="idle-meta" id="idle-meta"></div>
+    <div class="idle-prompt" id="idle-prompt">Press any button to begin</div>
+  </div>
+
+  <!-- ============ OVERLAYS ============ -->
+  <div id="toasts"></div>
+  <div id="modal-root"></div>
+  <aside id="debug" class="hidden"></aside>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
