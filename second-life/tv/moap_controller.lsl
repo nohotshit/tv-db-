@@ -39,6 +39,7 @@ integer FACE = 0;                 // overridden by the media_face setting
 string  frontendURL;              // the Smart TV interface itself
 string  currentURL;
 integer whitelistOn = FALSE;
+string  whitelist = "";      // remembered so setMedia can restore it
 
 // ---------------------------------------------------------------------------
 //  Setting the face
@@ -47,6 +48,23 @@ setMedia(string url)
 {
     if (url == "") return;
     currentURL = url;
+
+    // Clear any whitelist on the face BEFORE setting the url.
+    //
+    // llSetLinkMedia validates PRIM_MEDIA_CURRENT_URL against whatever
+    // whitelist is currently on the face, and if it fails it applies NOTHING
+    // from the call - not the url, not the size, not the permissions. A
+    // whitelist that is enabled with no entries rejects every address, so a
+    // leftover one from the Edit > Media dialog, or from a previous script,
+    // silently produces a permanently blank screen and the error
+    //
+    //     URL did not pass whitelist near parameter #0, param=2
+    //
+    // Doing this as its own call guarantees the ordering. The whitelist is
+    // re-applied afterwards if one is configured, which is the correct
+    // meaning anyway: it constrains where the PAGE may navigate, not what
+    // the owner's own script is allowed to load.
+    llSetLinkMedia(LINK_THIS, FACE, [ PRIM_MEDIA_WHITELIST_ENABLE, FALSE ]);
 
     llSetLinkMedia(LINK_THIS, FACE, [
         PRIM_MEDIA_CURRENT_URL,        url,
@@ -66,6 +84,15 @@ setMedia(string url)
         // Only the owner gets the viewer own navigation chrome.
         PRIM_MEDIA_PERMS_CONTROL,      PRIM_MEDIA_PERM_OWNER
     ]);
+
+    // Put the whitelist back, if the owner configured one.
+    if (whitelistOn && whitelist != "")
+    {
+        llSetLinkMedia(LINK_THIS, FACE, [
+            PRIM_MEDIA_WHITELIST_ENABLE, TRUE,
+            PRIM_MEDIA_WHITELIST, whitelist
+        ]);
+    }
 }
 
 // The whitelist is a genuine second line of defence: even if something got a
@@ -74,6 +101,8 @@ setMedia(string url)
 // sets, so it is a safety net rather than the primary control.
 applyWhitelist(string csv)
 {
+    whitelist = csv;
+
     if (csv == "")
     {
         whitelistOn = FALSE;

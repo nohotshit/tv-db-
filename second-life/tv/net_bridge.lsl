@@ -100,6 +100,15 @@ string normalizeUrl(string raw)
     string host = llGetSubString(u, sep + 3, -1);
     if (llSubStringIndex(host, ".") == -1) return "";
 
+    // No whitespace anywhere inside. Trimming the ends is not enough: a value
+    // like "https://my backend.onrender.com" survives every check above and is
+    // still rejected by llHTTPRequest.
+    if (llSubStringIndex(u, " ") != -1) return "";
+    if (llSubStringIndex(u, "	") != -1) return "";
+
+    // A bare host with nothing after the scheme is not an address either.
+    if (host == "") return "";
+
     return u;
 }
 
@@ -141,6 +150,15 @@ send(string endpoint, string body)
     if (BACKEND == "")
     {
         return;             // not configured yet; local features still work
+    }
+
+    // Belt and braces. BACKEND is normalised when it is set, but a request is
+    // cheap to skip and "URL passed to llHTTPRequest is not valid" is an error
+    // the object cannot explain afterwards. Better to stay silent and local.
+    if (llGetSubString(BACKEND, 0, 6) != "http://"
+        && llGetSubString(BACKEND, 0, 7) != "https://")
+    {
+        return;
     }
 
     if (!throttleRoom())
