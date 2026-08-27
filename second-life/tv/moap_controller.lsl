@@ -166,7 +166,18 @@ default
             }
             else if (k == "media_face")
             {
-                FACE = (integer)v;
+                integer newFace = (integer)v;
+                if (newFace != FACE)
+                {
+                    // The face setting can arrive AFTER media was already
+                    // placed, because the notecard loads asynchronously. Clear
+                    // the old face first, or the interface stays visible on
+                    // the wrong side of the prim while the intended one is
+                    // blank - which looks exactly like a TV that never worked.
+                    if (currentURL != "") llClearLinkMedia(LINK_THIS, FACE);
+                    FACE = newFace;
+                    if (currentURL != "") setMedia(currentURL);
+                }
             }
             else if (k == "media_whitelist")
             {

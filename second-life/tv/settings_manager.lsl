@@ -43,6 +43,7 @@ list DEFAULTS = [
     "movies_url",     "https://flixbaba.tv/",
     "home_url",       "https://duckduckgo.com/",
     "media_face",     "0",
+    "media_whitelist","",
     "sync_enabled",   "1",
     "messaging",      "1",
     "detect_range",   "20",
@@ -126,12 +127,27 @@ default
         {
             llOwnerSay("Smart TV: configuration loaded. "
                      + "You can now delete the notecard from the object contents.");
-            // Tell everyone the values they were waiting on.
-            broadcast("backend_url", NULL_KEY);
-            broadcast("shared_secret", NULL_KEY);
-            broadcast("device_secret", NULL_KEY);
+
+            // Publish EVERY key, not a hand-picked few.
+            //
+            // The notecard is read asynchronously, one line per dataserver
+            // event, so any script that asked for a value during state_entry
+            // was handed the DEFAULT and has no way to learn it went stale.
+            // Broadcasting only some keys left media_face at its default of 0
+            // no matter what the notecard said, and the interface was placed
+            // on face 0 while the intended face stayed blank.
+            //
+            // frontend_url is deliberately LAST: it is what makes
+            // moap_controller put the interface on screen, and that has to
+            // happen after media_face has arrived.
+            integer i;
+            integer n = llGetListLength(DEFAULTS);
+            for (i = 0; i < n; i += 2)
+            {
+                string dk = llList2String(DEFAULTS, i);
+                if (dk != "frontend_url") broadcast(dk, NULL_KEY);
+            }
             broadcast("frontend_url", NULL_KEY);
-            broadcast("permission_mode", NULL_KEY);
             return;
         }
 
