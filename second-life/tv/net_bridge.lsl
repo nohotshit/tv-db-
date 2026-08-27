@@ -60,10 +60,12 @@ integer online = FALSE;
 // ---------------------------------------------------------------------------
 string sign(string ts, string body)
 {
-    string key = DEVICE_SECRET;
-    if (key == "") key = SECRET;
-    string inner = llSHA256String(key + ":" + ts + ":" + body);
-    return llSHA256String(key + ":" + inner);
+    // Not named "key": that is a TYPE in LSL, and using it as a variable name
+    // is a syntax error rather than merely poor style.
+    string signingKey = DEVICE_SECRET;
+    if (signingKey == "") signingKey = SECRET;
+    string inner = llSHA256String(signingKey + ":" + ts + ":" + body);
+    return llSHA256String(signingKey + ":" + inner);
 }
 
 // LSL integers are 32 bit, so llGetUnixTime() * 1000 overflows. The bridge

@@ -26,6 +26,19 @@ EVENTS = {
     'linkset_data','final_damage','on_damage','on_death'
 }
 
+# Words LSL reserves. Using one as a variable name is a syntax error, not a
+# style problem, and the compiler reports it at a confusing offset - which is
+# why this check exists rather than relying on spotting it by eye.
+RESERVED = {
+    'integer','float','string','key','vector','rotation','quaternion','list',
+    'default','state','event','jump','return','if','else','for','do','while',
+    'print','TRUE','FALSE','NULL_KEY','PI','ZERO_VECTOR','ZERO_ROTATION','EOF'
+}
+TYPES_RE = r'(?:integer|float|string|key|vector|rotation|quaternion|list)'
+DECL_NAME = re.compile(chr(92) + 'b(' + TYPES_RE + ')' + chr(92) + 's+'
+                       + '([A-Za-z_]' + chr(92) + 'w*)' + chr(92) + 's*'
+                       + '(?==|;|,|\\)|' + chr(92) + 's)')
+
 # Declarations look like:  name(args)  or  type name(args)  at column 0
 DECL = re.compile(r'^(?:(integer|float|string|key|vector|rotation|list)\s+)?([A-Za-z_]\w*)\s*\(')
 CALL = re.compile(r'\b([A-Za-z_]\w*)\s*\(')
@@ -79,6 +92,15 @@ def check(path):
                 if i < declared[name]:
                     problems.append(
                         f'line {i+1}: calls "{name}" before it is declared on line {declared[name]+1}')
+
+    # A reserved word used as a variable name.
+    for i, line in enumerate(lines):
+        for m in DECL_NAME.finditer(line):
+            typ, nm = m.group(1), m.group(2)
+            if nm in RESERVED:
+                problems.append(
+                    f'line {i+1}: "{nm}" is a reserved LSL word and cannot name a '
+                    f'variable (declared as "{typ} {nm}")')
 
     # Event names inside states must be real events.
     for i, line in enumerate(lines):
