@@ -24,6 +24,21 @@ Copy `LSL_SHARED_SECRET` out of the backend's **Environment** tab into the
 `TV Config` notecard in world. It is the only value you ever move by hand, and
 only for the first pairing — after that each TV holds its own device secret.
 
+### If the blueprint is rejected
+
+**`services[1].plan — no such plan free for service type web`**
+Static sites have no plan tier. Remove the `plan:` line from the
+`smarttv-frontend` service entirely — only the database and the backend take
+one. (Fixed in this repository; you would only see this on an older copy.)
+
+**The database is rejected**
+Render allows one free PostgreSQL per workspace. Either delete the existing
+free database, or change `smarttv-db`'s plan to `basic-256mb`.
+
+**`services[0]` errors instead**
+That is the backend, a normal Node web service, where `plan: free` is valid.
+An error there usually means a typo in the plan name rather than the tier.
+
 ---
 
 ## Manual setup

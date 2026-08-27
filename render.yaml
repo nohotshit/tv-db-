@@ -9,6 +9,14 @@
 #           and free Postgres instances expire. Fine for testing.
 #   starter: what you want for anything people actually use in-world.
 # Change `plan:` values below before your first deploy if you want paid tiers.
+#
+# Only the DATABASE and the BACKEND take a `plan`. The static site must not
+# have one - static sites have no plan tier, and Render rejects the entire
+# blueprint with "no such plan free for service type web" if you give it one.
+#
+# If the database is rejected too, your workspace probably already has a free
+# Postgres (Render allows one). Change its plan to basic-256mb, or delete the
+# existing free database first.
 # ---------------------------------------------------------------------------
 
 databases:
@@ -66,7 +74,8 @@ services:
   - type: web
     name: smarttv-frontend
     runtime: static
-    plan: free
+    # No `plan:` here on purpose. Static sites have no plan tier - they are
+    # always free - and Render rejects the whole blueprint if you give them one.
     rootDir: frontend
     buildCommand: node build-config.js
     staticPublishPath: .
