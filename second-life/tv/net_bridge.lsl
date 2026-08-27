@@ -58,6 +58,51 @@ integer online = FALSE;
 //  The two-pass form above is what LSL can produce, and it avoids the length
 //  extension weakness a plain sha256(secret + message) would carry.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+//  Address normalisation
+// ---------------------------------------------------------------------------
+//  llHTTPRequest raises "URL passed to llHTTPRequest is not valid" for anything
+//  malformed, and the object has no way to explain itself afterwards. So the
+//  address is cleaned and checked ONCE, when it arrives from the notecard, and
+//  a bad one is reported to the owner in plain language rather than failing
+//  silently on every request forever.
+//
+//  Accepts what people actually type: a missing scheme, a trailing slash, a
+//  comment left on the end of the line.
+// ---------------------------------------------------------------------------
+string normalizeUrl(string raw)
+{
+    string u = llStringTrim(raw, STRING_TRIM);
+
+    // "https://x.onrender.com  # my backend"
+    integer hash = llSubStringIndex(u, "#");
+    if (hash != -1) u = llStringTrim(llGetSubString(u, 0, hash - 1), STRING_TRIM);
+
+    if (u == "") return "";
+
+    // Somebody pasted the host without the scheme.
+    if (llSubStringIndex(u, "://") == -1) u = "https://" + u;
+
+    // Only http and https can be requested from a script.
+    if (llGetSubString(u, 0, 6) != "http://" && llGetSubString(u, 0, 7) != "https://")
+    {
+        return "";
+    }
+
+    // Trim trailing slashes so BACKEND + "/api/..." never doubles up.
+    while (llStringLength(u) > 0 && llGetSubString(u, -1, -1) == "/")
+    {
+        u = llGetSubString(u, 0, -2);
+    }
+
+    // A host with no dot in it cannot resolve.
+    integer sep = llSubStringIndex(u, "://");
+    string host = llGetSubString(u, sep + 3, -1);
+    if (llSubStringIndex(host, ".") == -1) return "";
+
+    return u;
+}
+
 string sign(string ts, string body)
 {
     // Not named "key": that is a TYPE in LSL, and using it as a variable name
@@ -333,7 +378,17 @@ default
 
             if (k == "backend_url")
             {
-                BACKEND = v;
+                string clean = normalizeUrl(v);
+
+                if (clean == "" && llStringTrim(v, STRING_TRIM) != "")
+                {
+                    llOwnerSay("Smart TV: backend_url in the config notecard is not a "
+                             + "usable address -> \"" + v + "\". It should look like "
+                             + "https://your-service.onrender.com with no trailing slash. "
+                             + "Local controls will keep working until it is corrected.");
+                }
+
+                BACKEND = clean;
                 if (BACKEND != "" && myURL != "") registerWithBackend();
             }
             else if (k == "shared_secret") SECRET = v;

@@ -59,7 +59,13 @@ refreshHudScreen()
 {
     if (frontendURL == "" || pairedTV == NULL_KEY) return;
 
-    string url = frontendURL + "hud.html"
+    // The notecard may or may not end frontend_url with a slash. Without this,
+    // a missing one silently produces ".../xhud.html" and the remote screen
+    // just never loads.
+    string base = frontendURL;
+    if (llGetSubString(base, -1, -1) != "/") base += "/";
+
+    string url = base + "hud.html"
         + "?tv=" + llEscapeURL((string)pairedTV)
         + "&surface=hud"
         + "&u=" + llEscapeURL((string)llGetOwner())

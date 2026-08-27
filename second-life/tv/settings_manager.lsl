@@ -143,6 +143,16 @@ default
             {
                 string k = llStringTrim(llGetSubString(line, 0, eq - 1), STRING_TRIM);
                 string val = llStringTrim(llGetSubString(line, eq + 1, -1), STRING_TRIM);
+
+                // Strip a trailing comment: "backend_url = https://x  # mine".
+                // Only when the hash follows a space, so a value that legitimately
+                // contains one is left alone.
+                integer hash = llSubStringIndex(val, " #");
+                if (hash != -1)
+                {
+                    val = llStringTrim(llGetSubString(val, 0, hash - 1), STRING_TRIM);
+                }
+
                 set(k, val);
             }
         }
