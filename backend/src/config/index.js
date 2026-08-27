@@ -35,6 +35,24 @@ const config = {
   databaseUrl: process.env.DATABASE_URL || '',
   hasDatabase: !!process.env.DATABASE_URL,
 
+  // Postgres schema every table lives in.
+  //
+  // This exists so the TV can share a database with something else without the
+  // two colliding. Table names like `users`, `settings`, `favorites` and
+  // `history` are generic enough that another application on the same database
+  // will plausibly want them too. Confining ours to a named schema means both
+  // can have a `users` table and neither notices the other.
+  //
+  // Must be a plain identifier: it is interpolated into SQL, so it is
+  // validated rather than escaped.
+  dbSchema: (function () {
+    const raw = (process.env.DB_SCHEMA || 'smarttv').trim();
+    if (!/^[a-z_][a-z0-9_]*$/.test(raw)) {
+      throw new Error('DB_SCHEMA must be a lowercase identifier, got: ' + raw);
+    }
+    return raw;
+  })(),
+
   frontendUrl: origin(process.env.FRONTEND_URL),
   extraOrigins: list(process.env.EXTRA_CORS_ORIGINS),
 

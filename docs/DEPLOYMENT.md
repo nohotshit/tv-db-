@@ -47,7 +47,26 @@ If you would rather not use the blueprint.
 
 ### Database
 
-**New → PostgreSQL.** Any name. Copy the **Internal Database URL**.
+The blueprint does **not** create one. Render allows a single free PostgreSQL
+per workspace, so this project is set up to share whatever database you already
+have, kept apart inside its own schema.
+
+Copy the **Internal Database URL** from any existing Postgres and paste it into
+the backend's `DATABASE_URL` in the dashboard. Then set `DB_SCHEMA` (default
+`smarttv`).
+
+Every table, index and function this project creates goes inside that schema.
+Nothing else in the database is read or modified, and names as generic as
+`users`, `settings`, `favorites` and `history` cannot collide with another
+application's tables of the same name.
+
+Connections are pinned to the schema in the startup packet, with **no `public`
+fallback on purpose**: if the schema is missing, queries fail loudly rather
+than quietly creating our tables next to somebody else's.
+
+If you would rather have a dedicated database, add a `databases:` block back to
+`render.yaml` with `plan: basic-256mb`, or create one in the dashboard and point
+`DATABASE_URL` at it — no code changes either way.
 
 Migrations run automatically at boot. To run them yourself:
 

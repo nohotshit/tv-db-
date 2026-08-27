@@ -20,6 +20,17 @@ if (config.hasDatabase) {
     connectionString: config.databaseUrl,
     // Render managed Postgres terminates TLS with its own certificate chain.
     ssl: config.isProduction ? { rejectUnauthorized: false } : false,
+
+    // Pin every connection to our own schema, in the startup packet rather
+    // than with a SET afterwards, so there is no window where a query could
+    // run against the wrong search_path.
+    //
+    // Note there is deliberately NO `,public` fallback. If the schema is
+    // missing, queries fail loudly - which is what we want. A fallback would
+    // quietly create our tables in `public` and scribble over whatever else
+    // shares this database.
+    options: '-c search_path=' + config.dbSchema,
+
     max: 8,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 6000

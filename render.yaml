@@ -2,7 +2,9 @@
 # Musical Impact Smart TV - Render Blueprint
 # ---------------------------------------------------------------------------
 # Deploy with: Render Dashboard -> New -> Blueprint -> select this repo.
-# Everything below is created in one shot: database, backend, frontend.
+# Creates the backend and the frontend. It deliberately does NOT create a
+# database: Render allows one free Postgres per workspace, and this project
+# shares an existing one, isolated inside its own schema. See DATABASE_URL.
 #
 # NOTE ON PLANS
 #   free  : services sleep after ~15 min idle (cold start ~50s, WebSockets drop)
@@ -14,17 +16,8 @@
 # have one - static sites have no plan tier, and Render rejects the entire
 # blueprint with "no such plan free for service type web" if you give it one.
 #
-# If the database is rejected too, your workspace probably already has a free
-# Postgres (Render allows one). Change its plan to basic-256mb, or delete the
-# existing free database first.
+# There is no `databases:` block here on purpose - see DATABASE_URL below.
 # ---------------------------------------------------------------------------
-
-databases:
-  - name: smarttv-db
-    databaseName: smarttv
-    user: smarttv
-    plan: free
-    postgresMajorVersion: "16"
 
 services:
   # -------------------------------------------------------------------------
@@ -45,10 +38,18 @@ services:
         value: "20"
       - key: NODE_ENV
         value: production
+      # Paste the Internal Database URL of your EXISTING Postgres here, in the
+      # dashboard, after the blueprint applies. It is not in this file because
+      # a connection string is a credential and belongs nowhere near git.
+      #
+      # Render allows one free Postgres per workspace, so this project shares
+      # the database you already have rather than trying to create a second.
+      # Every table it creates lives inside the DB_SCHEMA below, so nothing
+      # collides with whatever else uses that database.
       - key: DATABASE_URL
-        fromDatabase:
-          name: smarttv-db
-          property: connectionString
+        sync: false
+      - key: DB_SCHEMA
+        value: smarttv
       # Auto-generated once, then stored by Render. Never appears in git.
       - key: SESSION_SECRET
         generateValue: true

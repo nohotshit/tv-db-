@@ -23,6 +23,17 @@ async function run() {
     return;
   }
 
+  // The schema must exist before anything else, because every connection in
+  // the pool is pinned to it with no `public` fallback. Creating it is safe to
+  // repeat and safe on a database shared with another application - it adds a
+  // namespace and touches nothing already there.
+  //
+  // config.dbSchema is validated as a plain identifier at load time, so this
+  // interpolation cannot carry anything else in.
+  await pool.query('CREATE SCHEMA IF NOT EXISTS ' + config.dbSchema);
+  log.info('[migrate] using schema:', config.dbSchema);
+
+  // Unqualified from here on: search_path puts these inside our schema.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name       TEXT PRIMARY KEY,
@@ -58,7 +69,7 @@ async function run() {
     }
   }
 
-  log.info('[migrate] up to date.');
+  log.info('[migrate] up to date in schema ' + config.dbSchema + '.');
 }
 
 if (require.main === module) {
