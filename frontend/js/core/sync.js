@@ -24,6 +24,11 @@ import { state, patch, canControl } from './state.js';
 import { send, serverNow, isConnected } from './socket.js';
 import { on, emit } from './bus.js';
 import { log } from './log.js';
+import {
+  anchorFromServerMedia,
+  expectedPosition as epochPosition,
+  setClockOffset
+} from './epoch-sync.js';
 
 /**
  * The currently registered player adapter, or null.
@@ -152,15 +157,28 @@ function applyRemote(cmd) {
 }
 
 /**
- * Where the media should be right now, given where it was when the server
- * stamped the command and how long ago that was in server time.
+ * Where the media should be right now.
+ *
+ * Delegates to the epoch module rather than repeating the arithmetic. The
+ * server's positionMs plus updatedAtServer is an anchor in another form, so
+ * both paths - a url-carried anchor and a WebSocket command - run through one
+ * verified implementation instead of two that can quietly disagree.
  */
 function targetPositionMs(cmd) {
-  const base = typeof cmd.positionMs === 'number' ? cmd.positionMs : state.media.positionMs;
-  const playing = cmd.playback === 'playing' || cmd.action === 'play';
-  if (!playing || !cmd.atServerTime) return base;
-  const elapsed = serverNow() - cmd.atServerTime;
-  return Math.max(0, base + Math.max(0, elapsed));
+  const anchor = anchorFromServerMedia({
+    positionMs: typeof cmd.positionMs === 'number' ? cmd.positionMs : state.media.positionMs,
+    updatedAtServer: cmd.atServerTime || cmd.updatedAtServer || state.media.updatedAtServer,
+    playback: cmd.playback || (cmd.action === 'play' ? 'playing' : state.media.playback),
+    durationMs: state.media.durationMs,
+    isLive: state.media.isLive,
+    url: state.media.url
+  });
+  if (!anchor) return 0;
+
+  // epoch-sync works in seconds against the local clock; our command stamps
+  // are server milliseconds, so line the clocks up before asking.
+  setClockOffset(state.cloud.offsetMs / 1000);
+  return Math.max(0, Math.round(epochPosition(anchor) * 1000));
 }
 
 /* -------------------------------------------------------------------------

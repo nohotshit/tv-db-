@@ -195,6 +195,11 @@ function handleMessage(ev) {
       emit('sync:command', p);
       break;
 
+    // Everyone moves to the same section.
+    case 'view':
+      emit('view:remote', p);
+      break;
+
     case 'viewers':
       patch({ viewers: p.viewers || [], host: 'host' in p ? p.host : state.host });
       break;

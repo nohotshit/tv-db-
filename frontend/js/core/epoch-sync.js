@@ -256,3 +256,36 @@ export function mediaElementAdapter(el) {
     isLive: function () { return !isFinite(el.duration) || el.duration === Infinity; }
   };
 }
+
+/**
+ * Convert the backend's media state into an anchor.
+ *
+ * The server sends `positionMs` together with `updatedAtServer`, the instant
+ * that position was true. That pair IS an anchor wearing different clothes:
+ *
+ *     startedAt = (updatedAtServer - positionMs) / 1000
+ *
+ * Expressing it this way means one implementation of the arithmetic for both
+ * the url-anchored path and the WebSocket path, instead of two that can drift
+ * apart in behaviour.
+ */
+export function anchorFromServerMedia(media) {
+  if (!media) return null;
+
+  const positionS = (Number(media.positionMs) || 0) / 1000;
+  const stampS = (Number(media.updatedAtServer) || Date.now()) / 1000;
+
+  let state = 'stopped';
+  if (media.playback === 'playing') state = 'playing';
+  else if (media.playback === 'paused' || media.playback === 'buffering') state = 'paused';
+
+  return {
+    videoId: media.url || '',
+    startedAt: stampS - positionS,
+    state: state,
+    pausedAt: positionS,
+    duration: (Number(media.durationMs) || 0) / 1000,
+    loop: false,
+    isLive: !!media.isLive
+  };
+}

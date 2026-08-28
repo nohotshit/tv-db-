@@ -10,7 +10,7 @@
 
 import { $ } from './core/dom.js';
 import { config } from './core/config.js';
-import { state, patch } from './core/state.js';
+import { state, patch, canControl } from './core/state.js';
 import { loadBranding } from './core/branding.js';
 import { loadSettingsLocal, loadSettingsCloud, loadUserData, applySettingsToDocument } from './core/userdata.js';
 import { connect } from './core/socket.js';
@@ -66,6 +66,7 @@ async function start() {
   initDebug();
   initIdle();
   wireRemote();
+  wireViewSync();
 
   bootProgress(64, config.backendUrl ? 'Connecting to cloud...' : 'Cloud not configured');
   connect();
@@ -123,6 +124,53 @@ function settle() {
      - LSL, which relays button presses through the backend
      - a physical keyboard, during development
    ------------------------------------------------------------------------- */
+
+/**
+ * Keep every screen on the same section.
+ *
+ * The prim carries one url, but each viewer runs their own copy of the page,
+ * so navigation is local unless it is deliberately shared. Without this the
+ * screen only looks shared: one person opening Games leaves everyone else
+ * looking at Home.
+ *
+ * `applyingRemote` suppresses the echo. Navigation caused by a remote message
+ * must not be re-broadcast, or two screens will bounce a view back and forth
+ * at each other forever.
+ */
+let applyingRemote = false;
+
+function wireViewSync() {
+  on('view:changed', async function (info) {
+    if (applyingRemote) return;
+    if (!canControl()) return;          // viewers browse locally; that is fine
+    const socket = await import('./core/socket.js');
+    if (!socket.isConnected()) return;
+    socket.send('view', { tvId: state.tv.id, view: info.id, params: info.params });
+  });
+
+  on('view:remote', function (p) {
+    if (!p || !p.view) return;
+    if (p.view === state.view) return;
+    applyingRemote = true;
+    try {
+      router.go(p.view, p.params || {}, false);
+    } finally {
+      applyingRemote = false;
+    }
+  });
+
+  // A snapshot carries the authoritative view too, so a screen that just
+  // loaded lands where the room already is instead of on Home.
+  on('sync:snapshot', function (snap) {
+    if (!snap || !snap.view || snap.view === state.view) return;
+    applyingRemote = true;
+    try {
+      router.go(snap.view, snap.viewParams || {}, false);
+    } finally {
+      applyingRemote = false;
+    }
+  });
+}
 
 function wireRemote() {
   on('remote:key', function (key) {

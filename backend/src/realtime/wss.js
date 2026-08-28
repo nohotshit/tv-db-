@@ -309,6 +309,16 @@ async function onMessage(ws, raw) {
       break;
     }
 
+    // Move every screen to the same section.
+    case 'view': {
+      const result = tvState.setView(tv, user, p.view, p.params);
+      if (!result.ok) return sendTo(ws, 'error', { error: result.error });
+      // `except` the sender: they already navigated locally, and echoing it
+      // back would fight their own UI.
+      broadcast(tv.tvId, 'view', { view: tv.view, params: tv.viewParams }, ws);
+      break;
+    }
+
     case 'queue': {
       const result = tvState.queueOp(tv, user, p);
       if (!result.ok) return sendTo(ws, 'error', { error: result.error });

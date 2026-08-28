@@ -39,6 +39,15 @@ function blank(tvId) {
       updatedAtServer: Date.now(), controller: ''
     },
 
+    // Which section everyone is looking at.
+    //
+    // Without this the "shared" screen is not shared: the prim carries one
+    // url, but every viewer runs their own copy of the page, so one person
+    // opening Games leaves everybody else on Home. The url is common; the
+    // view was not.
+    view: 'home',
+    viewParams: {},
+
     queue: [],
     queueIndex: -1,
     queueLocked: false,
@@ -230,6 +239,26 @@ function extrapolate(media) {
   if (media.playback !== 'playing' || media.isLive) return media.positionMs;
   const elapsed = Date.now() - media.updatedAtServer;
   return Math.max(0, media.positionMs + Math.max(0, elapsed));
+}
+
+/**
+ * Change the section every viewer is showing.
+ *
+ * Permission-checked exactly like playback: changing what the room is looking
+ * at is a control action, not a personal preference. A viewer without control
+ * can still browse their own HUD screen freely - that surface is theirs.
+ */
+function setView(tv, user, view, params) {
+  if (!canControl(tv, user && user.key)) {
+    return { ok: false, error: 'You do not have control of this TV.' };
+  }
+  const name = String(view || 'home').slice(0, 32);
+  if (!/^[a-z][a-z0-9_-]*$/.test(name)) return { ok: false, error: 'Unknown section.' };
+
+  tv.view = name;
+  tv.viewParams = (params && typeof params === 'object') ? params : {};
+  tv.dirty = true;
+  return { ok: true, view: name };
 }
 
 /** Record that the TV face has been handed to an external site. */
@@ -437,6 +466,8 @@ function snapshot(tv) {
       powered: true
     },
     media: media,
+    view: tv.view,
+    viewParams: tv.viewParams,
     queue: tv.queue,
     queueIndex: tv.queueIndex,
     repeat: tv.repeat,
@@ -555,6 +586,6 @@ async function hydrate(tvId) {
 module.exports = {
   get, has, all, hydrate, flush, snapshot, lslSnapshot, redactGame,
   canControl, roleOf, setHost, applyCommand, extrapolate,
-  setExternal, returnToApp, queueOp,
+  setExternal, returnToApp, queueOp, setView,
   touchViewer, replaceDetected, expireViewers, viewerList
 };
