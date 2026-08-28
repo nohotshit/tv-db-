@@ -239,9 +239,15 @@ registerWithBackend()
         return;
     }
 
-    llOwnerSay("Smart TV: registering. Signing key fingerprint "
-             + keyFingerprint() + ", length "
-             + (string)llStringLength(DEVICE_SECRET + SECRET) + ".");
+    // Report the two keys SEPARATELY. Printing them concatenated cannot tell
+    // you which one is wrong, which is exactly the confusion it caused.
+    string which = "notecard shared_secret";
+    if (DEVICE_SECRET != "") which = "device_secret (issued by the backend)";
+
+    llOwnerSay("Smart TV: registering. Using " + which
+             + " | fingerprint " + keyFingerprint()
+             + " | shared_secret length " + (string)llStringLength(SECRET)
+             + " | device_secret length " + (string)llStringLength(DEVICE_SECRET));
 
     string body = llList2Json(JSON_OBJECT, [
         "tvId",  (string)llGetKey(),
@@ -407,7 +413,19 @@ default
 
     link_message(integer sender, integer num, string str, key id)
     {
-        if (num == MI_NET_SEND)
+        // "forget" clears a device_secret that no longer matches the backend.
+    // Linkset Data survives script resets, so a stale one can otherwise stay
+    // in place indefinitely and quietly break every request.
+    if (num == MI_NET_SEND && str == "forget")
+    {
+        DEVICE_SECRET = "";
+        llMessageLinked(LINK_SET, MI_CFG_VALUE, "device_secret|", NULL_KEY);
+        llOwnerSay("Smart TV: device secret cleared. Re-registering.");
+        registerWithBackend();
+        return;
+    }
+
+    if (num == MI_NET_SEND)
         {
             integer bar = llSubStringIndex(str, "|");
             if (bar > 0)
