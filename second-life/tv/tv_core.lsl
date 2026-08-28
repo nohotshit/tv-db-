@@ -377,8 +377,14 @@ default
                 if (token != JSON_INVALID && token != "")
                 {
                     // Region local, addressed to the avatar who touched us.
+                    // The HUD needs the frontend url to build its own screen,
+                    // and it cannot read it from here: Linkset Data belongs to
+                    // one linkset, and the HUD is a separate object. Sending it
+                    // with the token makes the HUD self-configuring - no
+                    // notecard of its own, nothing to keep in step by hand.
                     llRegionSayTo(id, HUD_CHANNEL,
-                        "token|" + (string)llGetKey() + "|" + token);
+                        "token|" + (string)llGetKey() + "|" + token
+                        + "|" + llLinksetDataRead("frontend_url"));
                 }
             }
         }

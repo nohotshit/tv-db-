@@ -156,6 +156,16 @@ default
             pairedTV = (key)llList2String(parts, 1);
             token    = llList2String(parts, 2);
 
+            // The TV sends its frontend url with the token. Without this the
+            // HUD has no way to learn it - Linkset Data is per object, and the
+            // configuration notecard lives in the TV.
+            string sentUrl = llList2String(parts, 3);
+            if (sentUrl != "")
+            {
+                frontendURL = sentUrl;
+                llLinksetDataWrite("frontend_url", frontendURL);
+            }
+
             llLinksetDataWrite("paired_tv", (string)pairedTV);
             refreshHudScreen();
             llOwnerSay("Remote: paired with this TV.");
