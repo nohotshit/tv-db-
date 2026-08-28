@@ -38,6 +38,9 @@ string  menuPage = "main";
 
 integer backendOnline = FALSE;
 
+// [avatarKey, unixTime, ...] - throttles answers to discovery broadcasts.
+list discoverSeen;
+
 // ---------------------------------------------------------------------------
 //  Menus
 // ---------------------------------------------------------------------------
@@ -294,6 +297,36 @@ default
             // A HUD asking to be paired again, typically after a relog.
             if (msg == "pair") { pairHud(id); return; }
 
+            // "discover|<avatarKey>" - a remote looking for a TV, broadcast to
+            // the region because it has no idea what is out there yet. Every
+            // TV in earshot answers with its own key and position, and the
+            // remote keeps the nearest. This is what removes the need to walk
+            // over and touch the screen.
+            //
+            // Throttled per avatar: a region with several TVs and several
+            // people relogging at once should not turn into a chat storm.
+            if (llGetSubString(msg, 0, 8) == "discover|")
+            {
+                key who = (key)llGetSubString(msg, 9, -1);
+                if (who == NULL_KEY) return;
+
+                integer nowT = llGetUnixTime();
+                integer seen = llListFindList(discoverSeen, [(string)who]);
+                if (seen != -1)
+                {
+                    if (nowT - (integer)llList2String(discoverSeen, seen + 1) < 5) return;
+                    discoverSeen = llDeleteSubList(discoverSeen, seen, seen + 1);
+                }
+                discoverSeen += [(string)who, (string)nowT];
+                if (llGetListLength(discoverSeen) > 20)
+                {
+                    discoverSeen = llDeleteSubList(discoverSeen, 0, 1);
+                }
+
+                pairHud(who);
+                return;
+            }
+
             // "kind|value|avatarKey" - a button press on somebody remote.
             list parts = llParseString2List(msg, ["|"], []);
             if (llGetListLength(parts) < 3) return;
@@ -382,9 +415,14 @@ default
                     // one linkset, and the HUD is a separate object. Sending it
                     // with the token makes the HUD self-configuring - no
                     // notecard of its own, nothing to keep in step by hand.
+                    // Position travels with the reply so a remote hearing
+                    // several TVs can keep the nearest rather than whichever
+                    // happened to answer first.
                     llRegionSayTo(id, HUD_CHANNEL,
                         "token|" + (string)llGetKey() + "|" + token
-                        + "|" + llLinksetDataRead("frontend_url"));
+                        + "|" + llLinksetDataRead("frontend_url")
+                        + "|" + (string)llGetPos()
+                        + "|" + llGetObjectName());
                 }
             }
         }

@@ -26,6 +26,9 @@ integer MI_HUD_TOKEN = 300;
 integer MI_HUD_TV    = 301;
 
 key     pairedTV = NULL_KEY;
+string  pairedName = "";
+float   pairedDistance = -1.0;   // -1 = nothing chosen yet this round
+integer discovering = FALSE;
 string  token = "";
 string  frontendURL = "";
 integer menuChannel;
@@ -88,6 +91,29 @@ refreshHudScreen()
     ]);
 }
 
+/**
+ * Ask the region which TVs are out there.
+ *
+ * The remote cannot pair without knowing a TV exists, and it has no way to
+ * learn that on its own - which is why pairing used to need a touch. A single
+ * broadcast asks everything in earshot; each TV answers privately with its key
+ * and position, and the nearest is kept.
+ *
+ * One message per attach, per region change, and on demand. Not on a timer:
+ * a remote that shouts every few seconds is exactly the kind of script that
+ * gets a region a bad name.
+ */
+discover()
+{
+    discovering = TRUE;
+    pairedDistance = -1.0;
+    llRegionSay(HUD_CHANNEL, "discover|" + (string)llGetOwner());
+
+    // Close the window shortly afterwards. Replies arriving later are ignored
+    // so a distant TV cannot steal a pairing that has already settled.
+    llSetTimerEvent(4.0);
+}
+
 showMenu()
 {
     if (menuHandle) llListenRemove(menuHandle);
@@ -121,11 +147,12 @@ default
 
     attach(key av)
     {
-        if (av != NULL_KEY && pairedTV != NULL_KEY)
-        {
-            // Ask for a fresh token: the old one may well have expired.
-            llRegionSayTo(pairedTV, HUD_CHANNEL, "pair");
-        }
+        if (av == NULL_KEY) return;     // detached
+
+        // Always rediscover on attach. A remembered TV may be in another
+        // region, may have been derezzed, and its token has very likely
+        // expired. Discovery covers all three and costs one message.
+        discover();
     }
 
     touch_start(integer n)
@@ -153,8 +180,24 @@ default
             if (llGetSubString(msg, 0, 5) != "token|") return;
 
             list parts = llParseString2List(msg, ["|"], []);
-            pairedTV = (key)llList2String(parts, 1);
-            token    = llList2String(parts, 2);
+            key    tvKey    = (key)llList2String(parts, 1);
+            string tvToken  = llList2String(parts, 2);
+            vector tvPos    = (vector)llList2String(parts, 4);
+            string tvName   = llList2String(parts, 5);
+
+            // Several TVs may answer one broadcast. Keep the closest.
+            float dist = llVecDist(llGetPos(), tvPos);
+            if (tvPos == ZERO_VECTOR) dist = 9999.0;
+
+            if (discovering && pairedDistance >= 0.0 && dist >= pairedDistance)
+            {
+                return;                 // a nearer one already answered
+            }
+            pairedDistance = dist;
+
+            pairedTV = tvKey;
+            token    = tvToken;
+            if (tvName != "") pairedName = tvName;
 
             // The TV sends its frontend url with the token. Without this the
             // HUD has no way to learn it - Linkset Data is per object, and the
@@ -168,7 +211,11 @@ default
 
             llLinksetDataWrite("paired_tv", (string)pairedTV);
             refreshHudScreen();
-            llOwnerSay("Remote: paired with this TV.");
+
+            string where = pairedName;
+            if (where == "") where = "this TV";
+            if (dist < 9000.0) where += " (" + (string)llRound(dist) + "m)";
+            llOwnerSay("Remote: paired with " + where + ".");
             return;
         }
 
@@ -180,7 +227,8 @@ default
         if (msg == "Close") return;
         if (msg == "Re-pair")
         {
-            llOwnerSay("Remote: touch the TV to pair.");
+            llOwnerSay("Remote: looking for a TV nearby...");
+            discover();
             return;
         }
         if (msg == "Play/Pause") { sendToTV("media", "playpause"); return; }
@@ -198,6 +246,18 @@ default
 
     timer()
     {
+        // Close the discovery window: later replies are ignored so a distant
+        // TV cannot take over a pairing that has already settled.
+        if (discovering)
+        {
+            discovering = FALSE;
+            if (pairedTV == NULL_KEY)
+            {
+                llOwnerSay("Remote: no TV answered. Move closer, or touch one "
+                         + "to pair directly.");
+            }
+        }
+
         if (menuHandle) llListenRemove(menuHandle);
         menuHandle = 0;
         llSetTimerEvent(0.0);
@@ -205,6 +265,15 @@ default
 
     changed(integer c)
     {
-        if (c & CHANGED_OWNER) llResetScript();
+        if (c & CHANGED_OWNER) { llResetScript(); return; }
+
+        // A new region means the remembered TV is almost certainly gone, and
+        // there may be a different one here.
+        if (c & CHANGED_REGION || c & CHANGED_REGION_START)
+        {
+            pairedTV = NULL_KEY;
+            token = "";
+            discover();
+        }
     }
 }
