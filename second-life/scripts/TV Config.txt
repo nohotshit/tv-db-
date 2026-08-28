@@ -24,6 +24,12 @@ frontend_url = https://smarttv-frontend.onrender.com/
 # the first pairing, after which the object gets its own per-device secret.
 shared_secret =
 
+# Leave this BLANK. The backend issues a per-device key after pairing and the
+# object stores it in Linkset Data. An empty value here deletes that stored
+# key, which is how you re-pair a TV whose device key the backend no longer
+# recognises. Fill it in only if you are deliberately restoring one.
+device_secret =
+
 # ---- Which face shows the screen ------------------------------------------
 # Face number on the prim that this script is in. Look at your prim in edit
 # mode with "Select Face" to find it. 0 is the default for a simple box.

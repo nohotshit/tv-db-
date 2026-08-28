@@ -363,6 +363,24 @@ default
 
         if (status != 200)
         {
+            // A device secret the backend no longer recognises is a permanent
+            // lockout: we keep signing with it, it keeps rejecting, and
+            // Linkset Data preserves it across resets so nothing breaks the
+            // cycle. Drop it and fall back to the notecard shared secret,
+            // which is what pairing used in the first place.
+            //
+            // Safe from looping: once cleared, DEVICE_SECRET is empty and this
+            // branch cannot be taken again.
+            if (status == 401 && DEVICE_SECRET != "")
+            {
+                llOwnerSay("Smart TV: the backend rejected our device key. "
+                         + "Clearing it and re-pairing with the shared secret.");
+                DEVICE_SECRET = "";
+                llMessageLinked(LINK_SET, MI_CFG_VALUE, "device_secret|", NULL_KEY);
+                registerWithBackend();
+                return;
+            }
+
             if (online)
             {
                 online = FALSE;
