@@ -14,12 +14,33 @@
 const fs = require('fs');
 const path = require('path');
 
-/** Render's `property: host` gives a bare hostname; accept either form. */
+/**
+ * Render's `fromService ... property: host` hands back the bare service SLUG,
+ * not a hostname - "smarttv-backend-httc" rather than
+ * "smarttv-backend-httc.onrender.com". A url built from that resolves nowhere,
+ * so the page silently falls back to local mode and the object appears paired
+ * while the screen insists the cloud is down.
+ *
+ * A host with no dot in it cannot be a real hostname, so complete it.
+ */
+function completeRenderHost(value) {
+  if (!value) return '';
+  var s = String(value).trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+
+  var m = /^(https?:\/\/)([^\/]+)(.*)$/i.exec(s);
+  if (!m) return s;
+
+  var scheme = m[1], host = m[2], rest = m[3];
+  if (host.indexOf('.') < 0 && host.indexOf(':') < 0) {
+    host = host + '.onrender.com';
+  }
+  return scheme + host + rest;
+}
+
 function toOrigin(value, fallback) {
   if (!value) return fallback;
-  const trimmed = String(value).trim().replace(/\/+$/, '');
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
+  return completeRenderHost(value);
 }
 
 const backendUrl = toOrigin(process.env.BACKEND_URL, '');

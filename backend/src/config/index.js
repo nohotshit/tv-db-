@@ -11,10 +11,31 @@ require('dotenv').config();
 
 const crypto = require('crypto');
 
+/**
+ * Normalise a service URL, completing a bare Render service slug.
+ *
+ * Render's `fromService ... property: host` hands back the SLUG, not a
+ * hostname - "smarttv-frontend" rather than "smarttv-frontend.onrender.com".
+ * Left alone, that lands in the CORS allow list as an origin no browser will
+ * ever send, so every cross-origin request from the TV is refused with no
+ * obvious cause.
+ *
+ * A host containing no dot cannot be a real hostname. localhost:3000 keeps its
+ * port and is left alone, so development is unaffected.
+ */
 function origin(value) {
   if (!value) return '';
-  const s = String(value).trim().replace(/\/+$/, '');
-  return /^https?:\/\//i.test(s) ? s : 'https://' + s;
+  let s = String(value).trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+
+  const m = /^(https?:\/\/)([^\/]+)(.*)$/i.exec(s);
+  if (!m) return s;
+
+  let host = m[2];
+  if (host.indexOf('.') < 0 && host.indexOf(':') < 0) {
+    host = host + '.onrender.com';
+  }
+  return m[1] + host + m[3];
 }
 
 function list(value) {
