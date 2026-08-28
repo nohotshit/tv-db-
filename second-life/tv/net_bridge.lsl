@@ -112,12 +112,21 @@ string normalizeUrl(string raw)
     return u;
 }
 
+// Set only while a registration request is being signed. Registration is the
+// PAIRING operation, so it must always use the pairing key from the notecard -
+// never the per-device key, which is the very thing being re-established.
+//
+// Signing registration with a device key the backend has forgotten is
+// unrecoverable by construction: the only request that could repair the
+// pairing is itself rejected for using the broken key.
+integer pairingRequest = FALSE;
+
 string sign(string ts, string body)
 {
     // Not named "key": that is a TYPE in LSL, and using it as a variable name
     // is a syntax error rather than merely poor style.
     string signingKey = DEVICE_SECRET;
-    if (signingKey == "") signingKey = SECRET;
+    if (pairingRequest || signingKey == "") signingKey = SECRET;
     string inner = llSHA256String(signingKey + ":" + ts + ":" + body);
     return llSHA256String(signingKey + ":" + inner);
 }
@@ -220,7 +229,7 @@ drainQueue()
 string keyFingerprint()
 {
     string k = DEVICE_SECRET;
-    if (k == "") k = SECRET;
+    if (pairingRequest || k == "") k = SECRET;
     if (k == "") return "none";
     return llGetSubString(llSHA256String(k), 0, 7);
 }
@@ -239,12 +248,14 @@ registerWithBackend()
         return;
     }
 
-    // Report the two keys SEPARATELY. Printing them concatenated cannot tell
-    // you which one is wrong, which is exactly the confusion it caused.
-    string which = "notecard shared_secret";
-    if (DEVICE_SECRET != "") which = "device_secret (issued by the backend)";
+    // Set BEFORE the report, so keyFingerprint() describes the key this
+    // request will actually be signed with. Reporting one key and signing
+    // with another is worse than not reporting at all.
+    pairingRequest = TRUE;
 
-    llOwnerSay("Smart TV: registering. Using " + which
+    // The two keys are reported separately: printing them concatenated cannot
+    // tell you which one is wrong, which is exactly the confusion it caused.
+    llOwnerSay("Smart TV: registering. Using notecard shared_secret (pairing key)"
              + " | fingerprint " + keyFingerprint()
              + " | shared_secret length " + (string)llStringLength(SECRET)
              + " | device_secret length " + (string)llStringLength(DEVICE_SECRET));
@@ -257,6 +268,7 @@ registerWithBackend()
         "group", ""
     ]);
     send("/api/lsl/register", body);
+    pairingRequest = FALSE;
 }
 
 requestURL()
