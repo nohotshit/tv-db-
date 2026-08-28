@@ -169,8 +169,8 @@ function drawPanel() {
       h('h3', 'Media'),
       h('div.list', [
         rowChoice('Default source', 'Where the TV opens after boot',
-          [{ label: 'Home', value: 'home' }, { label: 'Music', value: 'music' },
-           { label: 'YouTube', value: 'youtube' }, { label: 'Last used', value: 'last' }],
+          [{ label: 'Home', value: 'home' }, { label: 'YouTube', value: 'youtube' },
+           { label: 'Browser', value: 'browser' }, { label: 'Last used', value: 'last' }],
           function () { return s.defaultSource; }, set('defaultSource')),
         rowToggle('Autoplay', 'Start playing as soon as media is selected',
           function () { return s.autoplay; }, set('autoplay')),

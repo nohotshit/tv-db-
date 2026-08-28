@@ -86,7 +86,10 @@ async function start() {
 
 function registerViews() {
   router.init($('#viewport'));
-  [home, movies, youtube, music, twitch, kick, browser, messages, games, clockView, settings]
+  // `music` is deliberately absent: the Music tile was removed. The module
+  // is still imported, because the HUD volume, mute, next and previous
+  // buttons drive the audio element it owns.
+  [home, movies, youtube, twitch, kick, browser, messages, games, clockView, settings]
     .forEach(router.register);
 }
 

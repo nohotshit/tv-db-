@@ -28,10 +28,6 @@ export const APPS = [
     hint: 'Embed or full site', urlKey: 'youtubeUrl'
   },
   {
-    id: 'music', icon: '\u{1F3B5}', label: 'Music', mode: 'app',
-    hint: 'Streams and stations'
-  },
-  {
     id: 'twitch', icon: '\u{1F4FA}', label: 'Twitch', mode: 'hybrid',
     hint: 'Live channels', urlKey: 'twitchUrl'
   },
