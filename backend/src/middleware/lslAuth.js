@@ -19,7 +19,14 @@ const tokens = require('../services/tokens');
 const devicesRepo = require('../db/repos/devices');
 const lslBridge = require('../services/lslBridge');
 const config = require('../config');
+const crypto = require('crypto');
 const log = require('../util/log');
+
+/** First 8 hex of sha256(value). Identifies a secret without exposing it. */
+function fingerprint(value) {
+  if (!value) return 'none';
+  return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, 8);
+}
 
 async function verifyObject(req, res, next) {
   const rawBody = req.rawBody || '';
@@ -51,7 +58,25 @@ async function verifyObject(req, res, next) {
   }
 
   if (!result.ok) {
-    log.warn('[lsl] rejected request from', claimedTvId, '-', result.reason);
+    // Enough detail to tell the two realistic causes apart - a secret that
+    // does not match, versus a body or timestamp that differs - without ever
+    // putting the secret itself in a log.
+    //
+    // `fp` is a fingerprint: the first 8 hex of sha256(secret). Comparing
+    // fingerprints proves whether two sides hold the same value without
+    // revealing it, which is what makes this safe to leave switched on.
+    const used = deviceSecret ? 'device' : 'global';
+    const secretInUse = deviceSecret || config.lslSecret;
+
+    log.warn('[lsl] rejected request from', claimedTvId, '-', result.reason,
+      '| key=' + used,
+      'len=' + String(secretInUse || '').length,
+      'fp=' + fingerprint(secretInUse),
+      '| ts=' + (req.get('x-mi-timestamp') || 'none'),
+      'bodyBytes=' + Buffer.byteLength(rawBody || '', 'utf8'),
+      '| got=' + String(req.get('x-mi-signature') || '').slice(0, 12),
+      'want=' + tokens.signLsl(String(req.get('x-mi-timestamp')), rawBody, secretInUse).slice(0, 12));
+
     return res.status(401).json({ error: 'Signature check failed: ' + result.reason });
   }
 
