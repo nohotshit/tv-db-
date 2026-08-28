@@ -68,7 +68,17 @@ If you would rather have a dedicated database, add a `databases:` block back to
 `render.yaml` with `plan: basic-256mb`, or create one in the dashboard and point
 `DATABASE_URL` at it — no code changes either way.
 
-Migrations run automatically at boot. To run them yourself:
+Migrations run at boot, in `server.js`, before the service starts listening —
+not in the build command. That matters because a database is often attached
+*after* the first deploy: a build-time migration would have run once against
+nothing and never again, leaving every query failing with
+`relation "tv_devices" does not exist`.
+
+They are non-fatal. If they fail, the service still starts and reports the
+database as unavailable, because a TV whose database is down should still
+switch on.
+
+To run them yourself:
 
 ```bash
 cd backend && DATABASE_URL="postgres://..." npm run migrate

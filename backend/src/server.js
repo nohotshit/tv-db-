@@ -13,6 +13,7 @@ const app = require('./app');
 const wss = require('./realtime/wss');
 const tvState = require('./services/tvState');
 const db = require('./db/pool');
+const migrate = require('./db/migrate');
 const config = require('./config');
 const log = require('./util/log');
 
@@ -42,12 +43,39 @@ const presenceTimer = setInterval(function () {
 }, 30000);
 presenceTimer.unref();
 
-server.listen(config.port, function () {
-  log.info('[server] Musical Impact Smart TV backend listening on port', config.port);
-  log.info('[server] environment:', config.env);
-  log.info('[server] database:', config.hasDatabase ? 'configured' : 'NOT configured (memory only)');
-  log.info('[server] frontend origin:', config.frontendUrl || '(none set)');
-});
+/**
+ * Bring up the schema, then start serving.
+ *
+ * Migrations run HERE rather than in the build command, because the database
+ * can be attached long after the first deploy - which is exactly what happens
+ * when you point an existing Postgres at the service later. A build-time
+ * migration would have run once, against nothing, and never again, leaving
+ * the service to fail every query with "relation ... does not exist".
+ *
+ * It is deliberately non-fatal. A television whose database is unreachable
+ * should still switch on: sync, presence, messaging and games are all in
+ * memory, and only saved data is lost. Refusing to boot would turn a partial
+ * outage into a total one.
+ */
+async function start() {
+  if (config.hasDatabase) {
+    try {
+      await migrate.run();
+    } catch (err) {
+      log.error('[server] migrations failed:', err.message);
+      log.warn('[server] continuing without stored data. Sync, presence and games still work.');
+    }
+  }
+
+  server.listen(config.port, function () {
+    log.info('[server] Musical Impact Smart TV backend listening on port', config.port);
+    log.info('[server] environment:', config.env);
+    log.info('[server] database:', config.hasDatabase ? 'configured' : 'NOT configured (memory only)');
+    log.info('[server] frontend origin:', config.frontendUrl || '(none set)');
+  });
+}
+
+start();
 
 /* ---- shutdown -----------------------------------------------------------
    Render sends SIGTERM before replacing an instance. Flushing state first

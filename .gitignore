@@ -38,3 +38,6 @@ backend/dbg.tmp.js
 # Working copy of the logo dropped in the repo root. The master is tracked at
 # frontend/assets/branding/logo-source-2000.png
 /logo.png
+
+# Your filled-in notecard. Holds the shared secret - never commit it.
+/MY-TV-Config.txt
