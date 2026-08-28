@@ -22,6 +22,7 @@ import { connect, send, isConnected } from './core/socket.js';
 import { on, emit } from './core/bus.js';
 import { initToasts } from './components/toast.js';
 import { initModals } from './components/modal.js';
+import { initDiag } from './core/diag.js';
 import { setScope } from './components/nav.js';
 import { hostOf } from './core/moap.js';
 import { log } from './core/log.js';
@@ -31,6 +32,7 @@ async function start() {
   loadSettingsLocal();
   initToasts();
   initModals();
+  initDiag();
 
   patch({
     tv: { id: config.tvId || 'local-tv' },

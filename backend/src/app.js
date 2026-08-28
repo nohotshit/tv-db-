@@ -16,6 +16,7 @@ const healthRoutes = require('./routes/health');
 const tvRoutes = require('./routes/tv');
 const userdataRoutes = require('./routes/userdata');
 const lslRoutes = require('./routes/lsl');
+const diagRoutes = require('./routes/diag');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use(express.json({
 app.use('/api', apiLimiter, healthRoutes);
 app.use('/api', apiLimiter, tvRoutes);
 app.use('/api', apiLimiter, userdataRoutes);
+app.use('/api', apiLimiter, diagRoutes);
 
 // The Second Life bridge has its own limiter and its own authentication.
 app.use('/api', lslLimiter, lslRoutes);

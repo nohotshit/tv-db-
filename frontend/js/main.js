@@ -22,6 +22,7 @@ import { initStatusbar } from './components/statusbar.js';
 import { initToasts } from './components/toast.js';
 import { initModals } from './components/modal.js';
 import { initDebug } from './components/debug.js';
+import { initDiag } from './core/diag.js';
 import { bootProgress, finishBoot, initIdle, noteActivity } from './components/screens.js';
 import { setScope } from './components/nav.js';
 
@@ -64,6 +65,7 @@ async function start() {
   initModals();
   initStatusbar();
   initDebug();
+  initDiag();
   initIdle();
   wireRemote();
   wireViewSync();
