@@ -142,6 +142,19 @@ goHome()
 
     if (llLinksetDataRead("debug") == "1") url += "&debug=1";
 
+    // Cache buster.
+    //
+    // Setting the SAME url on a face does not reliably make the viewer
+    // re-navigate - it is already there, so nothing changes. That makes TV
+    // Home a no-op exactly when you need it most: after a redeploy, when the
+    // loaded page is running against stale build-time configuration and the
+    // only visible symptom is that the cloud never connects.
+    //
+    // A changing parameter guarantees a genuine reload. The frontend ignores
+    // unknown parameters, and page state is rebuilt from the server snapshot
+    // anyway, so nothing is lost by reloading.
+    url += "&r=" + (string)llGetUnixTime();
+
     setMedia(url);
 }
 
