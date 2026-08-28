@@ -171,6 +171,11 @@ send(string endpoint, string body)
         return;
     }
 
+    if (SECRET == "" && DEVICE_SECRET == "")
+    {
+        return;             // nothing to sign with; stay local rather than fail
+    }
+
     sentThisWindow++;
     string ts = stamp();
 
@@ -209,9 +214,34 @@ drainQueue()
 //  invalidates the HTTP-in url, so re-registering is routine housekeeping and
 //  not an error path.
 // ---------------------------------------------------------------------------
+// First 8 hex of sha256(key). The backend logs the same fingerprint for the
+// key IT used, so the two can be compared directly without either side ever
+// printing the secret.
+string keyFingerprint()
+{
+    string k = DEVICE_SECRET;
+    if (k == "") k = SECRET;
+    if (k == "") return "none";
+    return llGetSubString(llSHA256String(k), 0, 7);
+}
+
 registerWithBackend()
 {
     if (BACKEND == "") return;
+
+    // Signing with an empty key produces a valid-looking signature that can
+    // never match, and the backend can only answer "bad-signature". Wait for
+    // the secret instead; the handler below re-triggers this when it lands.
+    if (SECRET == "" && DEVICE_SECRET == "")
+    {
+        llOwnerSay("Smart TV: waiting for shared_secret before registering. "
+                 + "If this repeats, shared_secret is missing from the notecard.");
+        return;
+    }
+
+    llOwnerSay("Smart TV: registering. Signing key fingerprint "
+             + keyFingerprint() + ", length "
+             + (string)llStringLength(DEVICE_SECRET + SECRET) + ".");
 
     string body = llList2Json(JSON_OBJECT, [
         "tvId",  (string)llGetKey(),
@@ -409,7 +439,13 @@ default
                 BACKEND = clean;
                 if (BACKEND != "" && myURL != "") registerWithBackend();
             }
-            else if (k == "shared_secret") SECRET = v;
+            else if (k == "shared_secret")
+            {
+                SECRET = v;
+                // The secret usually arrives AFTER backend_url, so the first
+                // registration attempt had no key to sign with. Retry now.
+                if (SECRET != "" && BACKEND != "" && myURL != "") registerWithBackend();
+            }
             else if (k == "device_secret") DEVICE_SECRET = v;
         }
     }
