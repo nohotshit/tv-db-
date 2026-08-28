@@ -113,9 +113,14 @@ default
 
         if (num == MI_NET_RECV)
         {
-            // A command arriving from the cloud means somebody is using the
-            // TV, even if nobody has touched the object.
-            wake();
+            // Only an actual COMMAND counts as somebody using the TV.
+            //
+            // net_bridge forwards every response body, including the routine
+            // poll that runs every thirty seconds whether anyone is here or
+            // not. Waking on all of them would mean the idle screen never
+            // engaged - the TV would keep itself awake talking to itself.
+            // Commands carry a "c" field; replies to our own polling do not.
+            if (llJsonGetValue(str, ["c"]) != JSON_INVALID) wake();
             return;
         }
 

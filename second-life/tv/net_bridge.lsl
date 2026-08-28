@@ -154,7 +154,13 @@ integer throttleRoom()
     return (sentThisWindow < 18);
 }
 
-send(string endpoint, string body)
+// `context` is the avatar this request is on behalf of, or NULL_KEY.
+//
+// An http_response carries no memory of what it is answering: not the
+// endpoint, and not who it was for. Pairing needs both - the token coming back
+// is useless unless we still know which avatar asked for it - so the context
+// is parked in `pending` against the request id and recovered on reply.
+send(string endpoint, string body, key context)
 {
     if (BACKEND == "")
     {
@@ -172,10 +178,10 @@ send(string endpoint, string body)
 
     if (!throttleRoom())
     {
-        queue += [endpoint + "|" + body];
-        if (llGetListLength(queue) > 12)
+        queue += [endpoint + "|" + body, (string)context];
+        if (llGetListLength(queue) > 24)
         {
-            queue = llDeleteSubList(queue, 0, 0);   // drop the oldest
+            queue = llDeleteSubList(queue, 0, 1);   // drop the oldest pair
         }
         return;
     }
@@ -198,21 +204,22 @@ send(string endpoint, string body)
           HTTP_CUSTOM_HEADER, "X-MI-Signature", sign(ts, body) ],
         body);
 
-    pending += [ (string)id, endpoint ];
-    if (llGetListLength(pending) > 24)
+    pending += [ (string)id, endpoint, (string)context ];
+    if (llGetListLength(pending) > 36)
     {
-        pending = llDeleteSubList(pending, 0, 1);
+        pending = llDeleteSubList(pending, 0, 2);
     }
 }
 
 drainQueue()
 {
-    while (llGetListLength(queue) > 0 && throttleRoom())
+    while (llGetListLength(queue) > 1 && throttleRoom())
     {
         string item = llList2String(queue, 0);
-        queue = llDeleteSubList(queue, 0, 0);
+        key ctx = (key)llList2String(queue, 1);
+        queue = llDeleteSubList(queue, 0, 1);
         integer bar = llSubStringIndex(item, "|");
-        send(llGetSubString(item, 0, bar - 1), llGetSubString(item, bar + 1, -1));
+        send(llGetSubString(item, 0, bar - 1), llGetSubString(item, bar + 1, -1), ctx);
     }
 }
 
@@ -267,7 +274,7 @@ registerWithBackend()
         "mode",  "owner",
         "group", ""
     ]);
-    send("/api/lsl/register", body);
+    send("/api/lsl/register", body, NULL_KEY);
     pairingRequest = FALSE;
 }
 
@@ -368,9 +375,11 @@ default
     http_response(key id, integer status, list metadata, string body)
     {
         integer idx = llListFindList(pending, [ (string)id ]);
+        key context = NULL_KEY;
         if (idx != -1)
         {
-            pending = llDeleteSubList(pending, idx, idx + 1);
+            context = (key)llList2String(pending, idx + 2);
+            pending = llDeleteSubList(pending, idx, idx + 2);
         }
 
         if (status != 200)
@@ -439,6 +448,14 @@ default
             llMessageLinked(LINK_SET, MI_NET_RECV,
                 llJsonSetValue(st, ["c"], "state"), NULL_KEY);
         }
+
+        // Forward the whole reply, with the avatar it belongs to.
+        //
+        // Previously only responses carrying "sec", "q" or "st" were passed
+        // on, so a pairing reply - {ok:1, t:<token>} - was silently discarded
+        // and a HUD could never finish pairing. Anything a script might need
+        // now reaches it, addressed to the avatar that asked.
+        llMessageLinked(LINK_SET, MI_NET_RECV, body, context);
     }
 
     link_message(integer sender, integer num, string str, key id)
@@ -460,8 +477,10 @@ default
             integer bar = llSubStringIndex(str, "|");
             if (bar > 0)
             {
+                // `id` is the avatar the caller is acting for, and it must
+                // survive the round trip - see send().
                 send(llGetSubString(str, 0, bar - 1),
-                     llGetSubString(str, bar + 1, -1));
+                     llGetSubString(str, bar + 1, -1), id);
             }
             return;
         }
@@ -510,11 +529,11 @@ default
         if (myURL == "")
         {
             requestURL();
-            send("/api/lsl/poll", llList2Json(JSON_OBJECT, ["tvId", (string)llGetKey()]));
+            send("/api/lsl/poll", llList2Json(JSON_OBJECT, ["tvId", (string)llGetKey()]), NULL_KEY);
         }
         else if (llFrand(1.0) < 0.25)
         {
-            send("/api/lsl/poll", llList2Json(JSON_OBJECT, ["tvId", (string)llGetKey()]));
+            send("/api/lsl/poll", llList2Json(JSON_OBJECT, ["tvId", (string)llGetKey()]), NULL_KEY);
         }
     }
 }
